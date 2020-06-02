@@ -41,6 +41,84 @@ test_set = pandas.read_csv("./test.csv", quotechar='"', header=0, sep=",")
 df_train = training_set.copy()
 df_test = test_set.copy()
 
+
+
+from collections import Counter
+sns.countplot(training_set.target, order=[x for x, count in sorted(Counter(training_set.target).items(), key=lambda x: -x[1])], palette="seismic")
+plt.xticks(rotation=90);
+dataset = pandas.concat([training_set,test_set], sort=True)
+
+def process_text(raw_text):
+    letters_only = re.sub("[^a-zA-Z]", " ",raw_text) 
+    words = letters_only.lower().split()
+    
+    stops = set(stopwords.words("english")) 
+    not_stop_words = [w for w in words if not w in stops]
+    
+    wordnet_lemmatizer = WordNetLemmatizer()
+    lemmatized = [wordnet_lemmatizer.lemmatize(word) for word in not_stop_words]
+    
+    stemmer = PorterStemmer()
+    stemmed = [stemmer.stem(word) for word in lemmatized]
+    
+    return( " ".join( stemmed ))  
+
+dataset['clean_text'] = dataset['text'].apply(lambda x: process_text(x))
+
+def clean(tweet): 
+            
+    # Special characters
+    tweet = re.sub(r"\x89Û_", "", tweet)
+    tweet = re.sub(r"\x89ÛÒ", "", tweet)
+    tweet = re.sub(r"\x89ÛÓ", "", tweet)
+    tweet = re.sub(r"\x89ÛÏWhen", "When", tweet)
+    tweet = re.sub(r"\x89ÛÏ", "", tweet)
+    tweet = re.sub(r"China\x89Ûªs", "China's", tweet)
+    tweet = re.sub(r"let\x89Ûªs", "let's", tweet)
+    tweet = re.sub(r"\x89Û÷", "", tweet)
+    tweet = re.sub(r"\x89Ûª", "", tweet)
+    tweet = re.sub(r"\x89Û\x9d", "", tweet)
+    tweet = re.sub(r"å_", "", tweet)
+    tweet = re.sub(r"\x89Û¢", "", tweet)
+    tweet = re.sub(r"\x89Û¢åÊ", "", tweet)
+    tweet = re.sub(r"fromåÊwounds", "from wounds", tweet)
+    tweet = re.sub(r"åÊ", "", tweet)
+    tweet = re.sub(r"åÈ", "", tweet)
+    tweet = re.sub(r"JapÌ_n", "Japan", tweet)    
+    tweet = re.sub(r"Ì©", "e", tweet)
+    tweet = re.sub(r"å¨", "", tweet)
+    tweet = re.sub(r"SuruÌ¤", "Suruc", tweet)
+    tweet = re.sub(r"åÇ", "", tweet)
+    tweet = re.sub(r"å£3million", "3 million", tweet)
+    tweet = re.sub(r"åÀ", "", tweet)
+
+    tweet = re.sub(r"https?:\/\/t.co\/[A-Za-z0-9]+", "", tweet)
+        
+    # Words with punctuations and special characters
+    punctuations = '@#!?+&*[]-%.:/();$=><|{}^' + "'`"
+    for p in punctuations:
+        tweet = tweet.replace(p, f' {p} ')
+        
+    return tweet
+
+def process_text(raw_text):
+    raw_text = clean(raw_text)
+    letters_only = re.sub("[^a-zA-Z]", " ",raw_text) 
+    words = letters_only.lower().split()
+    
+    stops = set(stopwords.words("english"))  
+    not_stop_words = [w for w in words if not w in stops]
+    
+    wordnet_lemmatizer = WordNetLemmatizer()
+    lemmatized = [wordnet_lemmatizer.lemmatize(word) for word in not_stop_words]
+    
+    stemmer = PorterStemmer()
+    stemmed = [stemmer.stem(word) for word in lemmatized]
+    
+    return( " ".join( stemmed )) 
+
+dataset['clean_text'] = dataset['text'].apply(lambda x: process_text(x))
+
 #Modelling
 
 X_train = dataset[0:len(training_set)][["id", "clean_text", "text"]]
